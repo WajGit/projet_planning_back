@@ -4,11 +4,13 @@ namespace App\Entity;
 
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
+#[UniqueEntity(fields: ['email'], message: 'There is already an account with this email')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -43,18 +45,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
-    public function getId(): ?int
-    {
+    public function __construct(){
+        $this->createdAt = new \DateTimeImmutable();
+    }
+
+    public function getId(): ?int{
         return $this->id;
     }
 
-    public function getEmail(): ?string
-    {
+    public function getEmail(): ?string{
         return $this->email;
     }
 
-    public function setEmail(string $email): static
-    {
+    public function setEmail(string $email): static{
         $this->email = $email;
 
         return $this;
@@ -65,8 +68,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      *
      * @see UserInterface
      */
-    public function getUserIdentifier(): string
-    {
+    public function getUserIdentifier(): string{
         return (string) $this->email;
     }
 
@@ -75,8 +77,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      *
      * @return list<string>
      */
-    public function getRoles(): array
-    {
+    public function getRoles(): array{
         $roles = $this->roles;
         // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
@@ -87,8 +88,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @param list<string> $roles
      */
-    public function setRoles(array $roles): static
-    {
+    public function setRoles(array $roles): static{
         $this->roles = $roles;
 
         return $this;
@@ -97,72 +97,56 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @see PasswordAuthenticatedUserInterface
      */
-    public function getPassword(): ?string
-    {
+    public function getPassword(): ?string{
         return $this->password;
     }
 
-    public function setPassword(string $password): static
-    {
+    public function setPassword(string $password): static{
         $this->password = $password;
-
         return $this;
     }
 
     /**
      * @see UserInterface
      */
-    public function eraseCredentials(): void
-    {
+    public function eraseCredentials(): void{
         // If you store any temporary, sensitive data on the user, clear it here
         // $this->plainPassword = null;
     }
 
-    public function getLastname(): ?string
-    {
+    public function getLastname(): ?string{
         return $this->lastname;
     }
 
-    public function setLastname(string $lastname): static
-    {
+    public function setLastname(string $lastname): static{
         $this->lastname = $lastname;
-
         return $this;
     }
 
-    public function getFirstname(): ?string
-    {
+    public function getFirstname(): ?string{
         return $this->firstname;
     }
 
-    public function setFirstname(string $firstname): static
-    {
+    public function setFirstname(string $firstname): static{
         $this->firstname = $firstname;
-
         return $this;
     }
 
-    public function getPhone(): ?string
-    {
+    public function getPhone(): ?string{
         return $this->phone;
     }
 
-    public function setPhone(string $phone): static
-    {
+    public function setPhone(string $phone): static{
         $this->phone = $phone;
-
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
-    {
+    public function getCreatedAt(): ?\DateTimeImmutable{
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): static
-    {
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static{
         $this->createdAt = $createdAt;
-
         return $this;
     }
 }
