@@ -16,7 +16,7 @@ use Symfony\Component\Routing\Attribute\Route;
 class RegistrationController extends AbstractController
 {
 
-    #[Route('/register', name: 'app_register', methods: ['POST'])]
+    #[Route('/api/register', name: 'register', methods: ['POST'])]
 
     public function register(Request $request, UserPasswordHasherInterface $userPasswordHasher, EntityManagerInterface $entityManager, UserRepository $userRepository): Response
     {

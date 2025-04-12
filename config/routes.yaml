@@ -4,6 +4,6 @@ controllers:
         namespace: App\Controller
     type: attribute
 login_check:
-    path: /login_check
+    path: /api/login_check
     controller: lexik_jwt_authentication.controller.authentication
 
