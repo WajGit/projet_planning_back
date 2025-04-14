@@ -6,6 +6,7 @@ use App\Repository\CompanyRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: CompanyRepository::class)]
 class Company
@@ -15,6 +16,7 @@ class Company
     #[ORM\Column]
     private ?int $id = null;
 
+    #[Groups(['company:read'])]
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
@@ -30,10 +32,17 @@ class Company
     #[ORM\ManyToOne(inversedBy: 'companies')]
     private ?User $author = null;
 
+    /**
+     * @var Collection<int, Employee>
+     */
+    #[ORM\ManyToMany(targetEntity: Employee::class, mappedBy: 'companys')]
+    private Collection $employees;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->groups = new ArrayCollection();
+        $this->employees = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -103,6 +112,33 @@ class Company
     public function setAuthor(?User $author): static
     {
         $this->author = $author;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Employee>
+     */
+    public function getEmployees(): Collection
+    {
+        return $this->employees;
+    }
+
+    public function addEmployee(Employee $employee): static
+    {
+        if (!$this->employees->contains($employee)) {
+            $this->employees->add($employee);
+            $employee->addCompany($this);
+        }
+
+        return $this;
+    }
+
+    public function removeEmployee(Employee $employee): static
+    {
+        if ($this->employees->removeElement($employee)) {
+            $employee->removeCompany($this);
+        }
 
         return $this;
     }
