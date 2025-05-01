@@ -56,9 +56,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Company::class, mappedBy: 'author')]
     private Collection $companies;
 
+    /**
+     * @var Collection<int, PlanningType>
+     */
+    #[ORM\OneToMany(targetEntity: PlanningType::class, mappedBy: 'author')]
+    private Collection $planningTypes;
+
     public function __construct(){
         $this->createdAt = new \DateTimeImmutable();
         $this->companies = new ArrayCollection();
+        $this->planningTypes = new ArrayCollection();
     }
 
     public function getId(): ?int{
@@ -186,6 +193,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($company->getAuthor() === $this) {
                 $company->setAuthor(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, PlanningType>
+     */
+    public function getPlanningTypes(): Collection
+    {
+        return $this->planningTypes;
+    }
+
+    public function addPlanningType(PlanningType $planningType): static
+    {
+        if (!$this->planningTypes->contains($planningType)) {
+            $this->planningTypes->add($planningType);
+            $planningType->setAuthor($this);
+        }
+
+        return $this;
+    }
+
+    public function removePlanningType(PlanningType $planningType): static
+    {
+        if ($this->planningTypes->removeElement($planningType)) {
+            // set the owning side to null (unless already changed)
+            if ($planningType->getAuthor() === $this) {
+                $planningType->setAuthor(null);
             }
         }
 

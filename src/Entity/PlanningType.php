@@ -2,14 +2,14 @@
 
 namespace App\Entity;
 
-use App\Repository\CompanyRepository;
+use App\Repository\PlanningTypeRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 
-#[ORM\Entity(repositoryClass: CompanyRepository::class)]
-class Company
+#[ORM\Entity(repositoryClass: PlanningTypeRepository::class)]
+class PlanningType
 {
     #[Groups(['company:read'])]
     #[ORM\Id]
@@ -17,35 +17,32 @@ class Company
     #[ORM\Column]
     private ?int $id = null;
 
-    #[Groups(['company:read'])]
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
-    #[Groups(['company:read'])]
+    #[ORM\ManyToOne(inversedBy: 'planningTypes')]
+    private ?User $author = null;
+
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
     /**
      * @var Collection<int, Group>
      */
-    #[Groups(['company:read'])]
-    #[ORM\OneToMany(targetEntity: Group::class, mappedBy: 'company')]
+    #[ORM\OneToMany(targetEntity: Group::class, mappedBy: 'planningType', cascade: ['persist', 'remove'])]
     private Collection $groups;
 
-    #[ORM\ManyToOne(inversedBy: 'companies')]
-    private ?User $author = null;
-
     /**
-     * @var Collection<int, Employee>
+     * @var Collection<int, WeekType>
      */
-    #[ORM\ManyToMany(targetEntity: Employee::class, mappedBy: 'companys')]
-    private Collection $employees;
+    #[ORM\OneToMany(targetEntity: WeekType::class, mappedBy: 'planningType', cascade: ['persist', 'remove'])]
+    private Collection $weeks;
 
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->groups = new ArrayCollection();
-        $this->employees = new ArrayCollection();
+        $this->weeks = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -61,6 +58,18 @@ class Company
     public function setName(string $name): static
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    public function getAuthor(): ?User
+    {
+        return $this->author;
+    }
+
+    public function setAuthor(?User $author): static
+    {
+        $this->author = $author;
 
         return $this;
     }
@@ -89,7 +98,7 @@ class Company
     {
         if (!$this->groups->contains($group)) {
             $this->groups->add($group);
-            $group->setCompany($this);
+            $group->setPlanningType($this);
         }
 
         return $this;
@@ -99,48 +108,39 @@ class Company
     {
         if ($this->groups->removeElement($group)) {
             // set the owning side to null (unless already changed)
-            if ($group->getCompany() === $this) {
-                $group->setCompany(null);
+            if ($group->getPlanningType() === $this) {
+                $group->setPlanningType(null);
             }
         }
 
         return $this;
     }
 
-    public function getAuthor(): ?User
-    {
-        return $this->author;
-    }
-
-    public function setAuthor(?User $author): static
-    {
-        $this->author = $author;
-
-        return $this;
-    }
-
     /**
-     * @return Collection<int, Employee>
+     * @return Collection<int, WeekType>
      */
-    public function getEmployees(): Collection
+    public function getWeeks(): Collection
     {
-        return $this->employees;
+        return $this->weeks;
     }
 
-    public function addEmployee(Employee $employee): static
+    public function addWeek(WeekType $week): static
     {
-        if (!$this->employees->contains($employee)) {
-            $this->employees->add($employee);
-            $employee->addCompany($this);
+        if (!$this->weeks->contains($week)) {
+            $this->weeks->add($week);
+            $week->setPlanningType($this);
         }
 
         return $this;
     }
 
-    public function removeEmployee(Employee $employee): static
+    public function removeWeek(WeekType $week): static
     {
-        if ($this->employees->removeElement($employee)) {
-            $employee->removeCompany($this);
+        if ($this->weeks->removeElement($week)) {
+            // set the owning side to null (unless already changed)
+            if ($week->getPlanningType() === $this) {
+                $week->setPlanningType(null);
+            }
         }
 
         return $this;

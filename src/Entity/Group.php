@@ -14,9 +14,10 @@ class Group
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['company:read', 'employee:read'])]
     private ?int $id = null;
 
-    #[Groups(['employee:read'])]
+    #[Groups(['company:read', 'employee:read'])]
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
@@ -30,7 +31,12 @@ class Group
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'groups')]
+    #[Groups(['group:read'])]
     private ?Company $company = null;
+
+    #[Groups(['company:read'])]
+    #[ORM\ManyToOne(inversedBy: 'groups')]
+    private ?PlanningType $planningType = null;
 
     public function __construct()
     {
@@ -98,6 +104,18 @@ class Group
     public function setCompany(?Company $company): static
     {
         $this->company = $company;
+
+        return $this;
+    }
+
+    public function getPlanningType(): ?PlanningType
+    {
+        return $this->planningType;
+    }
+
+    public function setPlanningType(?PlanningType $planningType): static
+    {
+        $this->planningType = $planningType;
 
         return $this;
     }

@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Serializer\SerializerInterface;
 
 #[Route('/api/company')]
 final class CompanyController extends AbstractController
@@ -32,7 +33,6 @@ final class CompanyController extends AbstractController
         if (empty($data['name'])) {
             return new JsonResponse(['error' => 'Le nom est requis'], Response::HTTP_BAD_REQUEST);
         }
-    
         $company = new Company();
         $company->setName($data['name']);
         $company->setAuthor($user);
@@ -44,6 +44,18 @@ final class CompanyController extends AbstractController
             'message' => 'Entreprise créée avec succès',
             'companyId' => $company->getId()
         ], Response::HTTP_CREATED);
+    }
+
+    #[Route('', name: 'api_company_list', methods: ['GET'])]
+    public function list(EntityManagerInterface $entityManager, SerializerInterface $serializer): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            return new JsonResponse(['error' => 'Non autorisé'], 401);
+        }
+        $companies = $entityManager->getRepository(Company::class)->findBy(['author' => $user]);
+        $json = $serializer->serialize($companies, 'json', ['groups' => 'company:read']);
+        return new JsonResponse($json, 200, [], true); // true = déjà en JSON
     }
 
 }

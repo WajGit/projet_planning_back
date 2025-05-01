@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Group;
 use App\Repository\CompanyRepository;
+
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -44,5 +45,32 @@ final class GroupController extends AbstractController
             'groupId' => $group->getId()
         ], Response::HTTP_CREATED);
     }
+
+//     #[Route('/api/group', name: 'api_group_list', methods: ['GET'])]
+//     public function list(Request $request, EntityManagerInterface $entityManager): JsonResponse
+//     {
+//         $user = $this->getUser();
+//         if (!$user) {
+//             return new JsonResponse(['error' => 'Non autorisé'], 401);
+//         }
+
+//         $companyId = $request->query->get('company');
+//         if (!$companyId) {
+//             return new JsonResponse(['error' => 'Paramètre company manquant'], 400);
+//         }
+
+//         $groups = $entityManager->getRepository(Group::class)->findBy(['company' => $companyId]);
+
+//         $data = [];
+//         foreach ($groups as $group) {
+//             $data[] = [
+//                 'id' => $group->getId(),
+//                 'name' => $group->getName(),
+//             ];
+//         }
+
+//         return new JsonResponse($data);
+// }
+
 
 }
