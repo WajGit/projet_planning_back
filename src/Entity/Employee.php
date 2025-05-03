@@ -11,6 +11,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
 #[ORM\Entity(repositoryClass: EmployeeRepository::class)]
 class Employee
 {
+    #[Groups(['employee:read'])]
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
