@@ -33,7 +33,7 @@ final class SlotTypeController extends AbstractController
         }
         $slot = new SlotType();
         $slot->setStartTime(\DateTime::createFromFormat('H:i', $data['startTime']));
-        $slot->setEndTime(\DateTime::createFromFormat('H:i', $data['endTime']));        
+        $slot->setEndTime(\DateTime::createFromFormat('H:i', $data['endTime']));
         $slot->setColor($data['color']);
         $slot->setDay($day);
         $entityManager->persist($slot);
@@ -43,12 +43,11 @@ final class SlotTypeController extends AbstractController
             'slot' => $serializer->normalize($slot, null, ['groups' => ['slot:read']])
         ], Response::HTTP_CREATED);
     }
-    
 
 
-    #[Route('/{id}', name: 'api_slot_update', methods: ['PUT'])]
-    public function update(int $id, Request $request, EntityManagerInterface $entityManager): JsonResponse
-    {
+
+    #[Route('/edit/{id}', name: 'api_slot_update', methods: ['PUT'])]
+    public function update(int $id, Request $request, EntityManagerInterface $entityManager, SerializerInterface $serializer): JsonResponse {
         $user = $this->getUser();
         if (!$user) {
             return new JsonResponse(['error' => 'Non autorisé'], 401);
@@ -61,32 +60,35 @@ final class SlotTypeController extends AbstractController
         if (!isset($data['startTime'], $data['endTime'], $data['color'])) {
             return new JsonResponse(['error' => 'Données incomplètes'], 400);
         }
-
         $slot->setStartTime(new \DateTime($data['startTime']));
         $slot->setEndTime(new \DateTime($data['endTime']));
         $slot->setColor($data['color']);
-
         $entityManager->flush();
-
-        return new JsonResponse(['message' => 'Créneau mis à jour avec succès'], 200);
+        return new JsonResponse([
+            'message' => 'Créneau mis à jour avec succès',
+            'slot' => $serializer->normalize($slot, null, ['groups' => ['slot:read']])
+        ], 200);
     }
 
 
-    #[Route('/{id}', name: 'api_slot_delete', methods: ['DELETE'])]
+    #[Route('/delete/{id}', name: 'api_slot_delete', methods: ['DELETE'])]
     public function delete(int $id, EntityManagerInterface $entityManager): JsonResponse
     {
         $user = $this->getUser();
         if (!$user) {
             return new JsonResponse(['error' => 'Non autorisé'], 401);
         }
+    
         $slot = $entityManager->getRepository(SlotType::class)->find($id);
         if (!$slot) {
             return new JsonResponse(['error' => 'Créneau introuvable'], 404);
         }
+    
         $entityManager->remove($slot);
         $entityManager->flush();
-
-        return new JsonResponse(['message' => 'Créneau supprimé'], 200);
+    
+        return new JsonResponse(['message' => 'Créneau supprimé avec succès.'], 200);
     }
+    
 }
 
