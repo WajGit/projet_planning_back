@@ -5,6 +5,9 @@ namespace App\Entity;
 use App\Repository\SlotTypeRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\Context;
+use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 
 #[ORM\Entity(repositoryClass: SlotTypeRepository::class)]
 class SlotType
@@ -12,15 +15,21 @@ class SlotType
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['slot:read'])]
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TIME_MUTABLE)]
+    #[Groups(['slot:read'])]
+    #[Context([DateTimeNormalizer::FORMAT_KEY => 'H:i'])]
     private ?\DateTimeInterface $startTime = null;
 
     #[ORM\Column(type: Types::TIME_MUTABLE)]
+    #[Groups(['slot:read'])]
+    #[Context([DateTimeNormalizer::FORMAT_KEY => 'H:i'])]
     private ?\DateTimeInterface $endTime = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['slot:read'])]
     private ?string $color = null;
 
     #[ORM\ManyToOne(inversedBy: 'slotTypes')]

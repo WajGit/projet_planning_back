@@ -6,6 +6,7 @@ use App\Entity\DayType;
 use App\Entity\SlotType;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,7 +17,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class SlotTypeController extends AbstractController
 {
     #[Route('/add', name: 'api_slot_add', methods: ['POST'])]
-    public function add(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    public function add(Request $request, EntityManagerInterface $entityManager, SerializerInterface $serializer): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
         $user = $this->getUser();
@@ -31,19 +32,18 @@ final class SlotTypeController extends AbstractController
             return new JsonResponse(['error' => 'Jour introuvable'], 404);
         }
         $slot = new SlotType();
-        $slot->setStartTime(new \DateTime($data['startTime']));
-        $slot->setEndTime(new \DateTime($data['endTime']));
+        $slot->setStartTime(\DateTime::createFromFormat('H:i', $data['startTime']));
+        $slot->setEndTime(\DateTime::createFromFormat('H:i', $data['endTime']));        
         $slot->setColor($data['color']);
         $slot->setDay($day);
-
         $entityManager->persist($slot);
         $entityManager->flush();
-
         return new JsonResponse([
-            'message' => 'Slot ajouté avec succès',
-            'slotId' => $slot->getId(),
+            'message' => 'Créneau ajouté avec succès.',
+            'slot' => $serializer->normalize($slot, null, ['groups' => ['slot:read']])
         ], Response::HTTP_CREATED);
     }
+    
 
 
     #[Route('/{id}', name: 'api_slot_update', methods: ['PUT'])]
