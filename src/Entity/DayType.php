@@ -24,7 +24,7 @@ class DayType
     /**
      * @var Collection<int, SlotType>
      */
-    #[ORM\OneToMany(targetEntity: SlotType::class, mappedBy: 'day' , cascade: ['persist', 'remove'])]
+    #[ORM\OneToMany(mappedBy: 'dayType', targetEntity: SlotType::class, cascade: ['remove'], orphanRemoval: true)]
     private Collection $slotTypes;
 
     public function __construct()
@@ -73,7 +73,7 @@ class DayType
     {
         if (!$this->slotTypes->contains($slotType)) {
             $this->slotTypes->add($slotType);
-            $slotType->setDay($this);
+            $slotType->setDayType($this);
         }
 
         return $this;
@@ -83,8 +83,8 @@ class DayType
     {
         if ($this->slotTypes->removeElement($slotType)) {
             // set the owning side to null (unless already changed)
-            if ($slotType->getDay() === $this) {
-                $slotType->setDay(null);
+            if ($slotType->getDayType() === $this) {
+                $slotType->setDayType(null);
             }
         }
 

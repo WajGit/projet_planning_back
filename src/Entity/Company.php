@@ -29,7 +29,7 @@ class Company
      * @var Collection<int, Group>
      */
     #[Groups(['company:read'])]
-    #[ORM\OneToMany(targetEntity: Group::class, mappedBy: 'company')]
+    #[ORM\OneToMany(targetEntity: Group::class, mappedBy: 'company', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $groups;
 
     #[ORM\ManyToOne(inversedBy: 'companies')]

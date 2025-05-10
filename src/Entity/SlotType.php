@@ -33,7 +33,7 @@ class SlotType
     private ?string $color = null;
 
     #[ORM\ManyToOne(inversedBy: 'slotTypes')]
-    private ?DayType $day = null;
+    private ?DayType $dayType = null;
 
     public function getId(): ?int
     {
@@ -76,14 +76,14 @@ class SlotType
         return $this;
     }
 
-    public function getDay(): ?DayType
+    public function getDayType(): ?DayType
     {
-        return $this->day;
+        return $this->dayType;
     }
 
-    public function setDay(?DayType $day): static
+    public function setDayType(?DayType $dayType): static
     {
-        $this->day = $day;
+        $this->dayType = $dayType;
 
         return $this;
     }

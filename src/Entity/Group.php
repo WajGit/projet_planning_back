@@ -11,112 +11,114 @@ use Symfony\Component\Serializer\Annotation\Groups;
 #[ORM\Table(name: '`group`')]
 class Group
 {
-    #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column]
-    #[Groups(['company:read', 'employee:read'])]
-    private ?int $id = null;
+  #[ORM\Id]
+  #[ORM\GeneratedValue]
+  #[ORM\Column]
+  #[Groups(['company:read', 'employee:read'])]
+  private ?int $id = null;
 
-    #[Groups(['company:read', 'employee:read'])]
-    #[ORM\Column(length: 255)]
-    private ?string $name = null;
+  #[Groups(['company:read', 'employee:read'])]
+  #[ORM\Column(length: 255)]
+  private ?string $name = null;
 
-    #[ORM\Column(type: Types::TIME_MUTABLE)]
-    private ?\DateTimeInterface $start = null;
+  #[ORM\Column(type: Types::TIME_MUTABLE)]
+  private ?\DateTimeInterface $start = null;
 
-    #[ORM\Column(type: Types::TIME_MUTABLE)]
-    private ?\DateTimeInterface $end = null;
+  #[ORM\Column(type: Types::TIME_MUTABLE)]
+  private ?\DateTimeInterface $end = null;
 
-    #[ORM\Column]
-    private ?\DateTimeImmutable $createdAt = null;
+  #[ORM\Column]
+  private ?\DateTimeImmutable $createdAt = null;
 
-    #[ORM\ManyToOne(inversedBy: 'groups')]
-    #[Groups(['group:read'])]
-    private ?Company $company = null;
+  #[ORM\ManyToOne(inversedBy: 'groups')]
+  #[Groups(['group:read'])]
+  private ?Company $company = null;
 
-    #[Groups(['company:read'])]
-    #[ORM\ManyToOne(inversedBy: 'groups')]
-    private ?PlanningType $planningType = null;
+  #[Groups(['company:read'])]
+  #[ORM\OneToOne(cascade: ['persist', 'remove'], orphanRemoval: true)]
+  #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+  private ?PlanningType $planningType = null;
 
-    public function __construct()
-    {
-        $this->createdAt = new \DateTimeImmutable();
-    }
 
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
+  public function __construct()
+  {
+    $this->createdAt = new \DateTimeImmutable();
+  }
 
-    public function getName(): ?string
-    {
-        return $this->name;
-    }
+  public function getId(): ?int
+  {
+    return $this->id;
+  }
 
-    public function setName(string $name): static
-    {
-        $this->name = $name;
+  public function getName(): ?string
+  {
+    return $this->name;
+  }
 
-        return $this;
-    }
+  public function setName(string $name): static
+  {
+    $this->name = $name;
 
-    public function getStart(): ?\DateTimeInterface
-    {
-        return $this->start;
-    }
+    return $this;
+  }
 
-    public function setStart(\DateTimeInterface $start): static
-    {
-        $this->start = $start;
+  public function getStart(): ?\DateTimeInterface
+  {
+    return $this->start;
+  }
 
-        return $this;
-    }
+  public function setStart(\DateTimeInterface $start): static
+  {
+    $this->start = $start;
 
-    public function getEnd(): ?\DateTimeInterface
-    {
-        return $this->end;
-    }
+    return $this;
+  }
 
-    public function setEnd(\DateTimeInterface $end): static
-    {
-        $this->end = $end;
+  public function getEnd(): ?\DateTimeInterface
+  {
+    return $this->end;
+  }
 
-        return $this;
-    }
+  public function setEnd(\DateTimeInterface $end): static
+  {
+    $this->end = $end;
 
-    public function getCreatedAt(): ?\DateTimeImmutable
-    {
-        return $this->createdAt;
-    }
+    return $this;
+  }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): static
-    {
-        $this->createdAt = $createdAt;
+  public function getCreatedAt(): ?\DateTimeImmutable
+  {
+    return $this->createdAt;
+  }
 
-        return $this;
-    }
+  public function setCreatedAt(\DateTimeImmutable $createdAt): static
+  {
+    $this->createdAt = $createdAt;
 
-    public function getCompany(): ?Company
-    {
-        return $this->company;
-    }
+    return $this;
+  }
 
-    public function setCompany(?Company $company): static
-    {
-        $this->company = $company;
+  public function getCompany(): ?Company
+  {
+    return $this->company;
+  }
 
-        return $this;
-    }
+  public function setCompany(?Company $company): static
+  {
+    $this->company = $company;
 
-    public function getPlanningType(): ?PlanningType
-    {
-        return $this->planningType;
-    }
+    return $this;
+  }
 
-    public function setPlanningType(?PlanningType $planningType): static
-    {
-        $this->planningType = $planningType;
+  public function getPlanningType(): ?PlanningType
+  {
+    return $this->planningType;
+  }
 
-        return $this;
-    }
+  public function setPlanningType(?PlanningType $planningType): static
+  {
+    $this->planningType = $planningType;
+
+    return $this;
+  }
 }

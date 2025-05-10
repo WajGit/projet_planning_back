@@ -60,7 +60,7 @@ final class DayTypeController extends AbstractController
         return new JsonResponse(['message' => 'Jour mis à jour']);
     }
 
-    #[Route('/{id}', name: 'api_day_delete', methods: ['DELETE'])]
+    #[Route('/delete/{id}', name: 'api_day_delete', methods: ['DELETE'])]
     public function delete(int $id, EntityManagerInterface $entityManager): JsonResponse
     {
         $user = $this->getUser();

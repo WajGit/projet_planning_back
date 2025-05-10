@@ -35,7 +35,7 @@ final class SlotTypeController extends AbstractController
         $slot->setStartTime(\DateTime::createFromFormat('H:i', $data['startTime']));
         $slot->setEndTime(\DateTime::createFromFormat('H:i', $data['endTime']));
         $slot->setColor($data['color']);
-        $slot->setDay($day);
+        $slot->setDayType($day);
         $entityManager->persist($slot);
         $entityManager->flush();
         return new JsonResponse([
@@ -78,12 +78,10 @@ final class SlotTypeController extends AbstractController
         if (!$user) {
             return new JsonResponse(['error' => 'Non autorisé'], 401);
         }
-    
         $slot = $entityManager->getRepository(SlotType::class)->find($id);
         if (!$slot) {
             return new JsonResponse(['error' => 'Créneau introuvable'], 404);
         }
-    
         $entityManager->remove($slot);
         $entityManager->flush();
     
