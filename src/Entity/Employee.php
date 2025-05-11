@@ -45,9 +45,16 @@ class Employee
     #[ORM\ManyToMany(targetEntity: Company::class, inversedBy: 'employees')]
     private Collection $companys;
 
+    /**
+     * @var Collection<int, Slot>
+     */
+    #[ORM\OneToMany(targetEntity: Slot::class, mappedBy: 'employee')]
+    private Collection $slots;
+
     public function __construct()
     {
         $this->companys = new ArrayCollection();
+        $this->slots = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -147,6 +154,36 @@ class Employee
     public function removeCompany(Company $company): static
     {
         $this->companys->removeElement($company);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Slot>
+     */
+    public function getSlots(): Collection
+    {
+        return $this->slots;
+    }
+
+    public function addSlot(Slot $slot): static
+    {
+        if (!$this->slots->contains($slot)) {
+            $this->slots->add($slot);
+            $slot->setEmployee($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSlot(Slot $slot): static
+    {
+        if ($this->slots->removeElement($slot)) {
+            // set the owning side to null (unless already changed)
+            if ($slot->getEmployee() === $this) {
+                $slot->setEmployee(null);
+            }
+        }
 
         return $this;
     }

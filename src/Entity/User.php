@@ -62,10 +62,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: PlanningType::class, mappedBy: 'author')]
     private Collection $planningTypes;
 
+    /**
+     * @var Collection<int, Calendar>
+     */
+    #[ORM\OneToMany(targetEntity: Calendar::class, mappedBy: 'user')]
+    private Collection $calendars;
+
     public function __construct(){
         $this->createdAt = new \DateTimeImmutable();
         $this->companies = new ArrayCollection();
         $this->planningTypes = new ArrayCollection();
+        $this->calendars = new ArrayCollection();
     }
 
     public function getId(): ?int{
@@ -223,6 +230,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($planningType->getAuthor() === $this) {
                 $planningType->setAuthor(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Calendar>
+     */
+    public function getCalendars(): Collection
+    {
+        return $this->calendars;
+    }
+
+    public function addCalendar(Calendar $calendar): static
+    {
+        if (!$this->calendars->contains($calendar)) {
+            $this->calendars->add($calendar);
+            $calendar->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCalendar(Calendar $calendar): static
+    {
+        if ($this->calendars->removeElement($calendar)) {
+            // set the owning side to null (unless already changed)
+            if ($calendar->getUser() === $this) {
+                $calendar->setUser(null);
             }
         }
 

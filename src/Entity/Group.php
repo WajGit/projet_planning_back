@@ -39,6 +39,9 @@ class Group
   #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
   private ?PlanningType $planningType = null;
 
+  #[ORM\ManyToOne(inversedBy: 'team')]
+  private ?Calendar $calendar = null;
+
 
   public function __construct()
   {
@@ -120,5 +123,17 @@ class Group
     $this->planningType = $planningType;
 
     return $this;
+  }
+
+  public function getCalendar(): ?Calendar
+  {
+      return $this->calendar;
+  }
+
+  public function setCalendar(?Calendar $calendar): static
+  {
+      $this->calendar = $calendar;
+
+      return $this;
   }
 }
