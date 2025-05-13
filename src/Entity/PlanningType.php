@@ -17,12 +17,15 @@ class PlanningType
   #[ORM\Column]
   private ?int $id = null;
 
+  #[Groups(['company:read'])]
   #[ORM\Column(length: 255)]
   private ?string $name = null;
 
+  #[Groups(['company:read'])]
   #[ORM\ManyToOne(inversedBy: 'planningTypes')]
   private ?User $author = null;
 
+  #[Groups(['company:read'])]
   #[ORM\Column]
   private ?\DateTimeImmutable $createdAt = null;
 

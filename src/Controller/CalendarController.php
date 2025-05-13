@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+
 #[Route('/api/calendar')]
 final class CalendarController extends AbstractController
 {
@@ -24,7 +25,13 @@ final class CalendarController extends AbstractController
     if (!$user) {
       return new JsonResponse(['error' => 'Non autorisé'], 401);
     }
-    $calendar = $entityManager->getRepository(Calendar::class)->find($id);
+
+    $group = $entityManager->getRepository(Group::class)->find($id);
+    if (!$group) {
+      return new JsonResponse(['error' => 'Groupe introuvable'], 404);
+    }
+
+  $calendar = $group->getCalendar();
     if (!$calendar) {
       return new JsonResponse(['error' => 'Calendrier introuvable'], 404);
     }
@@ -45,7 +52,7 @@ final class CalendarController extends AbstractController
       foreach ($week->getDays() as $day) {
         $dayData = [
           'id' => $day->getId(),
-          'date' => $day->getDate()->format('Y-m-d'),
+          'name' => $day->getName()->format('Y-m-d'),
           'slots' => [],
         ];
         foreach ($day->getSlots() as $slot) {
@@ -117,7 +124,8 @@ final class CalendarController extends AbstractController
       $week->setCalendar($calendar);
       foreach ($weekData['days'] as $dayData) {
         $day = new Day();
-        $day->setDate(new \DateTime($dayData['date']));
+        // $day->setDate(new \DateTime($dayData['date']));
+        $day->setName(new \DateTime($dayData['date']));
         $day->setWeek($week);
         foreach ($dayData['slots'] as $slotData) {
           $slot = new Slot();
@@ -145,4 +153,102 @@ final class CalendarController extends AbstractController
       'calendarId' => $calendar->getId()
     ], Response::HTTP_CREATED);
   }
+
+#[Route('/generate', name: 'api_calendar_generate', methods: ['POST'])]
+public function generate(Request $request, EntityManagerInterface $em): JsonResponse
+{
+    /* ---------- 1.  Lecture / vérifs de base ---------- */
+    $data = json_decode($request->getContent(), true);
+    $user = $this->getUser();
+    if (!$user) {
+        return new JsonResponse(['error' => 'Non autorisé'], 401);
+    }
+    $groupId   = $data['groupId']   ?? null;
+    $startDate = isset($data['startDate']) ? new \DateTime($data['startDate']) : null;
+    $endDate   = isset($data['endDate'])   ? new \DateTime($data['endDate'])   : null;
+    if (!$groupId || !$startDate || !$endDate) {
+        return new JsonResponse(['error' => 'Données manquantes'], 400);
+    }
+    $group = $em->getRepository(Group::class)->find($groupId);
+    if (!$group) {
+        return new JsonResponse(['error' => 'Groupe introuvable'], 404);
+    }
+    $planning = $group->getPlanningType();
+    if (!$planning) {
+        return new JsonResponse(['error' => 'Ce groupe n’a pas de trame associée'], 400);
+    }
+    /* ---------- 2.  Création du Calendar ---------- */
+    $calendar = new Calendar();
+    $calendar->setName(sprintf(
+        'Planning généré du %s au %s',
+        $startDate->format('d/m/Y'),
+        $endDate->format('d/m/Y')
+    ));
+    $calendar->setCreatedAt(new \DateTimeImmutable());
+    $calendar->setUser($user);
+    $group->setCalendar($calendar);
+    /* ---------- 3.  Boucle jour par jour ---------- */
+    $current = clone $startDate;
+    $weeks   = [];                       // table « monday‑label » → Week concrète
+    // total de semaines dans la trame (pour boucler)
+    $trameWeeks = $planning->getWeeks()->count();
+    while ($current <= $endDate) {
+        /* 3‑a. Trouver le WeekType & DayType de la trame */
+        $daysSinceStart = $startDate->diff($current)->days;
+        $weekIndex      = intdiv($daysSinceStart, 7) % $trameWeeks; // tourne en boucle
+        $dayIndex       = ((int) $current->format('N')) - 1;        // 0 = lundi … 6 = dimanche
+        $weekModel = $planning->getWeeks()[$weekIndex] ?? null;
+        if (!$weekModel) {           // sécurité (ne doit pas arriver)
+            $current->modify('+1 day');
+            continue;
+        }
+        $dayModel = $weekModel->getDayTypes()[$dayIndex] ?? null;
+        if (!$dayModel) {            // ex. trame sans créneau ce jour‑là
+            $current->modify('+1 day');
+            continue;
+        }
+        /* 3‑b. Obtenir / créer la Week concrète correspondante */
+        $mondayLabel = (clone $current)->modify('monday this week')->format('Y-m-d');
+        if (!isset($weeks[$mondayLabel])) {
+            $week = new Week();
+            $week->setName('Semaine du ' . (clone $current)->modify('monday this week')->format('d/m'));
+            $week->setCalendar($calendar);
+            $weeks[$mondayLabel] = $week;
+            $calendar->addWeek($week);
+        }
+        $week = $weeks[$mondayLabel];
+        /* 3‑c. Créer le Day concret avec *la date réelle* */
+        $day = new Day();
+        $day->setName(clone $current);    // <— tu stockes bien la DATE dans name
+        $day->setWeek($week);
+        $week->addDay($day);
+
+        /* 3‑d. Copier les slots de la trame */
+        foreach ($dayModel->getSlotTypes() as $slotModel) {
+            $slot = new Slot();
+            $slot->setStartTime(
+                new \DateTime($current->format('Y-m-d') . ' ' . $slotModel->getStartTime()->format('H:i'))
+            );
+            $slot->setEndTime(
+                new \DateTime($current->format('Y-m-d') . ' ' . $slotModel->getEndTime()->format('H:i'))
+            );
+            $slot->setColor($slotModel->getColor());
+            $slot->setDay($day);
+            $day->addSlot($slot);
+        }
+        /* 3‑e. Passer au jour suivant */
+        $current->modify('+1 day');
+    }
+    /* ---------- 4.  Sauvegarde ---------- */
+    $em->persist($calendar);
+    $em->flush();
+
+    return new JsonResponse([
+        'message'    => 'Planning généré avec succès',
+        'calendarId' => $calendar->getId(),
+    ], 201);
+}
+
+
+
 }

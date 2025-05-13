@@ -19,12 +19,6 @@ class Calendar
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    private ?\DateTimeInterface $start = null;
-
-    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    private ?\DateTimeInterface $end = null;
-
     #[ORM\ManyToOne(inversedBy: 'calendars')]
     private ?User $user = null;
 
@@ -40,7 +34,7 @@ class Calendar
     /**
      * @var Collection<int, Week>
      */
-    #[ORM\OneToMany(targetEntity: Week::class, mappedBy: 'calendar')]
+    #[ORM\OneToMany(mappedBy: 'calendar', targetEntity: Week::class, cascade: ['persist', 'remove'])]
     private Collection $weeks;
 
     public function __construct()
@@ -64,11 +58,6 @@ class Calendar
         $this->name = $name;
 
         return $this;
-    }
-
-    public function getStart(): ?\DateTimeInterface
-    {
-        return $this->start;
     }
 
     public function getUser(): ?User

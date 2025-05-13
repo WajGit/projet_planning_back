@@ -25,7 +25,7 @@ class Day
     /**
      * @var Collection<int, Slot>
      */
-    #[ORM\OneToMany(targetEntity: Slot::class, mappedBy: 'day')]
+    #[ORM\OneToMany(mappedBy: 'day', targetEntity: Slot::class, cascade: ['persist', 'remove'])]
     private Collection $slots;
 
     public function __construct()

@@ -1,0 +1,77 @@
+<?php
+
+declare(strict_types=1);
+
+namespace DoctrineMigrations;
+
+use Doctrine\DBAL\Schema\Schema;
+use Doctrine\Migrations\AbstractMigration;
+
+/**
+ * Auto-generated Migration: Please modify to your needs!
+ */
+final class Version20250511181412 extends AbstractMigration
+{
+    public function getDescription(): string
+    {
+        return '';
+    }
+
+    public function up(Schema $schema): void
+    {
+        // this up() migration is auto-generated, please modify it to your needs
+        $this->addSql(<<<'SQL'
+            CREATE TABLE day (id INT AUTO_INCREMENT NOT NULL, week_id INT DEFAULT NULL, name DATETIME NOT NULL, INDEX IDX_E5A02990C86F3B2F (week_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE TABLE slot (id INT AUTO_INCREMENT NOT NULL, day_id INT DEFAULT NULL, employee_id INT DEFAULT NULL, start_time DATETIME NOT NULL, end_time DATETIME NOT NULL, color VARCHAR(255) NOT NULL, INDEX IDX_AC0E20679C24126 (day_id), INDEX IDX_AC0E20678C03F15C (employee_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE TABLE week (id INT AUTO_INCREMENT NOT NULL, calendar_id INT DEFAULT NULL, name VARCHAR(255) NOT NULL, INDEX IDX_5B5A69C0A40A2C8 (calendar_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE day ADD CONSTRAINT FK_E5A02990C86F3B2F FOREIGN KEY (week_id) REFERENCES week (id)
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE slot ADD CONSTRAINT FK_AC0E20679C24126 FOREIGN KEY (day_id) REFERENCES day (id)
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE slot ADD CONSTRAINT FK_AC0E20678C03F15C FOREIGN KEY (employee_id) REFERENCES employee (id)
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE week ADD CONSTRAINT FK_5B5A69C0A40A2C8 FOREIGN KEY (calendar_id) REFERENCES calendar (id)
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE calendar ADD start DATETIME NOT NULL, ADD end DATETIME NOT NULL
+        SQL);
+    }
+
+    public function down(Schema $schema): void
+    {
+        // this down() migration is auto-generated, please modify it to your needs
+        $this->addSql(<<<'SQL'
+            ALTER TABLE day DROP FOREIGN KEY FK_E5A02990C86F3B2F
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE slot DROP FOREIGN KEY FK_AC0E20679C24126
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE slot DROP FOREIGN KEY FK_AC0E20678C03F15C
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE week DROP FOREIGN KEY FK_5B5A69C0A40A2C8
+        SQL);
+        $this->addSql(<<<'SQL'
+            DROP TABLE day
+        SQL);
+        $this->addSql(<<<'SQL'
+            DROP TABLE slot
+        SQL);
+        $this->addSql(<<<'SQL'
+            DROP TABLE week
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE calendar DROP start, DROP end
+        SQL);
+    }
+}

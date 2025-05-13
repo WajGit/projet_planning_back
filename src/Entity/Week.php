@@ -24,7 +24,7 @@ class Week
     /**
      * @var Collection<int, Day>
      */
-    #[ORM\OneToMany(targetEntity: Day::class, mappedBy: 'week')]
+    #[ORM\OneToMany(mappedBy: 'week', targetEntity: Day::class, cascade: ['persist', 'remove'])]
     private Collection $days;
 
     public function __construct()
