@@ -39,13 +39,16 @@ class Group
   #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
   private ?PlanningType $planningType = null;
 
-  #[ORM\ManyToOne(inversedBy: 'team')]
+  #[Groups(['group:read'])]
+  #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+  #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
   private ?Calendar $calendar = null;
 
 
   public function __construct()
   {
     $this->createdAt = new \DateTimeImmutable();
+
   }
 
   public function getId(): ?int

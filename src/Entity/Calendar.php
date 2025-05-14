@@ -5,41 +5,41 @@ namespace App\Entity;
 use App\Repository\CalendarRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: CalendarRepository::class)]
 class Calendar
 {
+    #[Groups(['group:read'])]
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
+    #[Groups(['group:read'])]
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
+    #[Groups(['group:read'])]
     #[ORM\ManyToOne(inversedBy: 'calendars')]
     private ?User $user = null;
 
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
-    /**
-     * @var Collection<int, Group>
-     */
-    #[ORM\OneToMany(targetEntity: Group::class, mappedBy: 'calendar')]
-    private Collection $group;
+    #[ORM\OneToOne(mappedBy: 'calendar')]
+    private ?Group $group = null;
 
     /**
      * @var Collection<int, Week>
      */
-    #[ORM\OneToMany(mappedBy: 'calendar', targetEntity: Week::class, cascade: ['persist', 'remove'])]
+    #[Groups(['group:read'])]
+    #[ORM\OneToMany(targetEntity: Week::class, mappedBy: 'calendar', cascade: ['persist', 'remove'])]
     private Collection $weeks;
 
     public function __construct()
     {
-        $this->group = new ArrayCollection();
         $this->weeks = new ArrayCollection();
     }
 
@@ -56,7 +56,6 @@ class Calendar
     public function setName(string $name): static
     {
         $this->name = $name;
-
         return $this;
     }
 
@@ -68,7 +67,6 @@ class Calendar
     public function setUser(?User $user): static
     {
         $this->user = $user;
-
         return $this;
     }
 
@@ -80,37 +78,17 @@ class Calendar
     public function setCreatedAt(\DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
-
         return $this;
     }
 
-    /**
-     * @return Collection<int, Group>
-     */
-    public function getgroup(): Collection
+    public function getGroup(): ?Group
     {
         return $this->group;
     }
 
-    public function addgroup(Group $group): static
+    public function setGroup(?Group $group): static
     {
-        if (!$this->group->contains($group)) {
-            $this->group->add($group);
-            $group->setCalendar($this);
-        }
-
-        return $this;
-    }
-
-    public function removegroup(group $group): static
-    {
-        if ($this->group->removeElement($group)) {
-            // set the owning side to null (unless already changed)
-            if ($group->getCalendar() === $this) {
-                $group->setCalendar(null);
-            }
-        }
-
+        $this->group = $group;
         return $this;
     }
 
@@ -128,19 +106,16 @@ class Calendar
             $this->weeks->add($week);
             $week->setCalendar($this);
         }
-
         return $this;
     }
 
     public function removeWeek(Week $week): static
     {
         if ($this->weeks->removeElement($week)) {
-            // set the owning side to null (unless already changed)
             if ($week->getCalendar() === $this) {
                 $week->setCalendar(null);
             }
         }
-
         return $this;
     }
 }

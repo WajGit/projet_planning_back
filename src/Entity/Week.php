@@ -6,6 +6,7 @@ use App\Repository\WeekRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: WeekRepository::class)]
 class Week
@@ -17,6 +18,12 @@ class Week
 
     #[ORM\Column(length: 255)]
     private ?string $name = null;
+
+    #[ORM\Column]
+    private ?int $year = null;
+
+    #[ORM\Column]
+    private ?int $number = null;
 
     #[ORM\ManyToOne(inversedBy: 'weeks')]
     private ?Calendar $calendar = null;
@@ -87,6 +94,30 @@ class Week
                 $day->setWeek(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getYear(): ?int
+    {
+        return $this->year;
+    }
+
+    public function setYear(int $year): static
+    {
+        $this->year = $year;
+
+        return $this;
+    }
+
+    public function getNumber(): ?int
+    {
+        return $this->number;
+    }
+
+    public function setNumber(int $number): static
+    {
+        $this->number = $number;
 
         return $this;
     }

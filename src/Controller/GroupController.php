@@ -15,62 +15,60 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/group')]
 final class GroupController extends AbstractController
 {
-    #[Route('/add', name: 'app_group_add', methods: ['POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager, CompanyRepository $companyRepository): Response
-    {
-        $data = json_decode($request->getContent(), true);
-        $user = $this->getUser();
-        if (!$user) {
-            return new JsonResponse(['error' => 'Unauthorized'], 401);
-        }
-        if (empty($data['group']['name'])) {
-            return new JsonResponse(['error' => 'Le nom est requis'], Response::HTTP_BAD_REQUEST);
-        }
-        $companyName = $data['company']['name'];
-        $company = $companyRepository->findOneBy(['name' => $companyName]);
-        if (!$company) {
-            return new JsonResponse(['error' => 'Entreprise non trouvée'], Response::HTTP_NOT_FOUND);
-        }
-        $group = new Group();
-        $group->setName($data['group']['name']);
-        $group->setStart(new \DateTime($data['group']['start']));
-        $group->setEnd(new \DateTime($data['group']['end']));
-        $group->setCompany($company);
 
-        $entityManager->persist($group);
-        $entityManager->flush();
-    
-        return new JsonResponse([
-            'message' => 'Groupe créé avec succès',
-            'groupId' => $group->getId()
-        ], Response::HTTP_CREATED);
+  #[Route('/{id}', name: 'api_group_show', methods: ['GET'])]
+  public function show(int $id, EntityManagerInterface $entityManager): JsonResponse
+  {
+    $user = $this->getUser();
+    if (!$user) {
+      return new JsonResponse(['error' => 'Non autorisé'], 401);
     }
+    $group = $entityManager->getRepository(Group::class)->find($id);
+    if (!$group) {
+      return new JsonResponse(['error' => 'Groupe introuvable'], 404);
+    }
+    return new JsonResponse([
+      'message' => 'Affichage Group succès',
+      'groupId' => $group->getId(),
+      'planningId' => $group->getPlanningType()->getId(),
+      'calendarId' => $group->getCalendar()->getId(),
+    ], Response::HTTP_OK);
+  }
 
-//     #[Route('/api/group', name: 'api_group_list', methods: ['GET'])]
-//     public function list(Request $request, EntityManagerInterface $entityManager): JsonResponse
-//     {
-//         $user = $this->getUser();
-//         if (!$user) {
-//             return new JsonResponse(['error' => 'Non autorisé'], 401);
-//         }
 
-//         $companyId = $request->query->get('company');
-//         if (!$companyId) {
-//             return new JsonResponse(['error' => 'Paramètre company manquant'], 400);
-//         }
+  
+  #[Route('/add', name: 'app_group_add', methods: ['POST'])]
+  public function new(Request $request, EntityManagerInterface $entityManager, CompanyRepository $companyRepository): Response
+  {
+    $data = json_decode($request->getContent(), true);
+    $user = $this->getUser();
+    if (!$user) {
+      return new JsonResponse(['error' => 'Unauthorized'], 401);
+    }
+    if (empty($data['group']['name'])) {
+      return new JsonResponse(['error' => 'Le nom est requis'], Response::HTTP_BAD_REQUEST);
+    }
+    $companyName = $data['company']['name'];
+    $company = $companyRepository->findOneBy(['name' => $companyName]);
+    if (!$company) {
+      return new JsonResponse(['error' => 'Entreprise non trouvée'], Response::HTTP_NOT_FOUND);
+    }
+    $group = new Group();
+    $group->setName($data['group']['name']);
+    $group->setStart(new \DateTime($data['group']['start']));
+    $group->setEnd(new \DateTime($data['group']['end']));
+    $group->setCompany($company);
 
-//         $groups = $entityManager->getRepository(Group::class)->findBy(['company' => $companyId]);
+    $entityManager->persist($group);
+    $entityManager->flush();
 
-//         $data = [];
-//         foreach ($groups as $group) {
-//             $data[] = [
-//                 'id' => $group->getId(),
-//                 'name' => $group->getName(),
-//             ];
-//         }
+    return new JsonResponse([
+      'message' => 'Groupe créé avec succès',
+      'groupId' => $group->getId()
+    ], Response::HTTP_CREATED);
+  }
 
-//         return new JsonResponse($data);
-// }
+
 
 
 }

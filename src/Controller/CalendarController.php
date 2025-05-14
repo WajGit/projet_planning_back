@@ -18,6 +18,7 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/calendar')]
 final class CalendarController extends AbstractController
 {
+
   #[Route('/{id}', name: 'api_calendar_show', methods: ['GET'])]
   public function show(int $id, EntityManagerInterface $entityManager): JsonResponse
   {
@@ -25,13 +26,7 @@ final class CalendarController extends AbstractController
     if (!$user) {
       return new JsonResponse(['error' => 'Non autorisé'], 401);
     }
-
-    $group = $entityManager->getRepository(Group::class)->find($id);
-    if (!$group) {
-      return new JsonResponse(['error' => 'Groupe introuvable'], 404);
-    }
-
-  $calendar = $group->getCalendar();
+    $calendar = $entityManager->getRepository(Calendar::class)->find($id);
     if (!$calendar) {
       return new JsonResponse(['error' => 'Calendrier introuvable'], 404);
     }
@@ -47,6 +42,8 @@ final class CalendarController extends AbstractController
       $weekData = [
         'id' => $week->getId(),
         'name' => $week->getName(),
+        'year' => $week->getYear(),
+        'number' => $week->getNumber(),
         'days' => [],
       ];
       foreach ($week->getDays() as $day) {
@@ -71,38 +68,70 @@ final class CalendarController extends AbstractController
     return new JsonResponse($data);
   }
 
-  #[Route('/create', name: 'api_calendar_create', methods: ['POST'])]
-  public function create(Request $request, EntityManagerInterface $entityManager): JsonResponse
-  {
+
+
+#[Route('/create', name: 'api_calendar_create', methods: ['POST'])]
+public function create(Request $request, EntityManagerInterface $entityManager): JsonResponse
+{
     $data = json_decode($request->getContent(), true);
     $user = $this->getUser();
     if (!$user) {
-      return new JsonResponse(['error' => 'Non autorisé'], 401);
+        return new JsonResponse(['error' => 'Non autorisé'], 401);
     }
-    $name = $data['name'] ?? null;
     $groupId = $data['groupId'] ?? null;
-    if (!$name || !$groupId) {
-      return new JsonResponse(['error' => 'Nom ou groupe manquant'], 400);
+    if (!$groupId) {
+        return new JsonResponse(['error' => 'ID de groupe manquant'], 400);
     }
     $group = $entityManager->getRepository(Group::class)->find($groupId);
     if (!$group) {
-      return new JsonResponse(['error' => 'Groupe introuvable'], 404);
+        return new JsonResponse(['error' => 'Groupe introuvable'], 404);
     }
     if ($group->getCalendar()) {
-      return new JsonResponse(['error' => 'Ce groupe a déjà un calendrier'], 409);
+        return new JsonResponse(['error' => 'Un calendrier existe déjà pour ce groupe'], 409);
     }
+    // Création du calendrier
     $calendar = new Calendar();
-    $calendar->setName($name);
+    $calendar->setName('Planning de ' . $group->getName());
     $calendar->setCreatedAt(new \DateTimeImmutable());
     $calendar->setUser($user);
     $group->setCalendar($calendar);
     $entityManager->persist($calendar);
     $entityManager->flush();
-    return $this->json([
+    $data = [
       'id' => $calendar->getId(),
-      'name' => $calendar->getName()
-    ], 201);
-  }
+      'name' => $calendar->getName(),
+      'weeks' => [],
+    ];
+    foreach ($calendar->getWeeks() as $week) {
+      $weekData = [
+        'id' => $week->getId(),
+        'name' => $week->getName(),
+        'year' => $week->getYear(),
+        'number' => $week->getNumber(),
+        'days' => [],
+      ];
+      foreach ($week->getDays() as $day) {
+        $dayData = [
+          'id' => $day->getId(),
+          'name' => $day->getName()->format('Y-m-d'),
+          'slots' => [],
+        ];
+        foreach ($day->getSlots() as $slot) {
+          $dayData['slots'][] = [
+            'id' => $slot->getId(),
+            'startTime' => $slot->getStartTime()->format('H:i'),
+            'endTime' => $slot->getEndTime()->format('H:i'),
+            'color' => $slot->getColor(),
+            'employee' => $slot->getEmployee()?->getId()
+          ];
+        }
+        $weekData['days'][] = $dayData;
+      }
+      $data['weeks'][] = $weekData;
+    }
+    return new JsonResponse($data);
+
+}
 
   #[Route('/save', name: 'api_calendar_save', methods: ['POST'])]
   public function save(Request $request, EntityManagerInterface $entityManager): JsonResponse
@@ -154,101 +183,143 @@ final class CalendarController extends AbstractController
     ], Response::HTTP_CREATED);
   }
 
-#[Route('/generate', name: 'api_calendar_generate', methods: ['POST'])]
-public function generate(Request $request, EntityManagerInterface $em): JsonResponse
-{
-    /* ---------- 1.  Lecture / vérifs de base ---------- */
-    $data = json_decode($request->getContent(), true);
-    $user = $this->getUser();
-    if (!$user) {
-        return new JsonResponse(['error' => 'Non autorisé'], 401);
-    }
-    $groupId   = $data['groupId']   ?? null;
-    $startDate = isset($data['startDate']) ? new \DateTime($data['startDate']) : null;
-    $endDate   = isset($data['endDate'])   ? new \DateTime($data['endDate'])   : null;
-    if (!$groupId || !$startDate || !$endDate) {
-        return new JsonResponse(['error' => 'Données manquantes'], 400);
-    }
-    $group = $em->getRepository(Group::class)->find($groupId);
-    if (!$group) {
-        return new JsonResponse(['error' => 'Groupe introuvable'], 404);
-    }
-    $planning = $group->getPlanningType();
-    if (!$planning) {
-        return new JsonResponse(['error' => 'Ce groupe n’a pas de trame associée'], 400);
-    }
-    /* ---------- 2.  Création du Calendar ---------- */
-    $calendar = new Calendar();
-    $calendar->setName(sprintf(
-        'Planning généré du %s au %s',
-        $startDate->format('d/m/Y'),
-        $endDate->format('d/m/Y')
-    ));
-    $calendar->setCreatedAt(new \DateTimeImmutable());
-    $calendar->setUser($user);
-    $group->setCalendar($calendar);
-    /* ---------- 3.  Boucle jour par jour ---------- */
-    $current = clone $startDate;
-    $weeks   = [];                       // table « monday‑label » → Week concrète
-    // total de semaines dans la trame (pour boucler)
-    $trameWeeks = $planning->getWeeks()->count();
-    while ($current <= $endDate) {
-        /* 3‑a. Trouver le WeekType & DayType de la trame */
-        $daysSinceStart = $startDate->diff($current)->days;
-        $weekIndex      = intdiv($daysSinceStart, 7) % $trameWeeks; // tourne en boucle
-        $dayIndex       = ((int) $current->format('N')) - 1;        // 0 = lundi … 6 = dimanche
-        $weekModel = $planning->getWeeks()[$weekIndex] ?? null;
-        if (!$weekModel) {           // sécurité (ne doit pas arriver)
-            $current->modify('+1 day');
-            continue;
-        }
-        $dayModel = $weekModel->getDayTypes()[$dayIndex] ?? null;
-        if (!$dayModel) {            // ex. trame sans créneau ce jour‑là
-            $current->modify('+1 day');
-            continue;
-        }
-        /* 3‑b. Obtenir / créer la Week concrète correspondante */
-        $mondayLabel = (clone $current)->modify('monday this week')->format('Y-m-d');
-        if (!isset($weeks[$mondayLabel])) {
-            $week = new Week();
-            $week->setName('Semaine du ' . (clone $current)->modify('monday this week')->format('d/m'));
-            $week->setCalendar($calendar);
-            $weeks[$mondayLabel] = $week;
-            $calendar->addWeek($week);
-        }
-        $week = $weeks[$mondayLabel];
-        /* 3‑c. Créer le Day concret avec *la date réelle* */
-        $day = new Day();
-        $day->setName(clone $current);    // <— tu stockes bien la DATE dans name
-        $day->setWeek($week);
-        $week->addDay($day);
 
-        /* 3‑d. Copier les slots de la trame */
-        foreach ($dayModel->getSlotTypes() as $slotModel) {
-            $slot = new Slot();
-            $slot->setStartTime(
-                new \DateTime($current->format('Y-m-d') . ' ' . $slotModel->getStartTime()->format('H:i'))
-            );
-            $slot->setEndTime(
-                new \DateTime($current->format('Y-m-d') . ' ' . $slotModel->getEndTime()->format('H:i'))
-            );
-            $slot->setColor($slotModel->getColor());
-            $slot->setDay($day);
-            $day->addSlot($slot);
-        }
-        /* 3‑e. Passer au jour suivant */
-        $current->modify('+1 day');
-    }
-    /* ---------- 4.  Sauvegarde ---------- */
-    $em->persist($calendar);
-    $em->flush();
 
-    return new JsonResponse([
-        'message'    => 'Planning généré avec succès',
-        'calendarId' => $calendar->getId(),
-    ], 201);
-}
+  #[Route('/generate', name: 'api_calendar_generate', methods: ['POST'])]
+  public function generate(Request $request, EntityManagerInterface $entityManager): JsonResponse
+  {
+      /* Lecture / vérifs de base */
+      $data = json_decode($request->getContent(), true);
+      $user = $this->getUser();
+      if (!$user) {
+          return new JsonResponse(['error' => 'Non autorisé'], 401);
+      }
 
+      $groupId   = $data['groupId'] ?? null;
+      $startDate = isset($data['startDate']) ? new \DateTime($data['startDate']) : null;
+      $endDate   = isset($data['endDate']) ? new \DateTime($data['endDate']) : null;
+
+      if (!$groupId || !$startDate || !$endDate) {
+          return new JsonResponse(['error' => 'Données manquantes'], 400);
+      }
+
+      $group = $entityManager->getRepository(Group::class)->find($groupId);
+      if (!$group) {
+          return new JsonResponse(['error' => 'Groupe introuvable'], 404);
+      }
+
+      $planningType = $group->getPlanningType();
+      if (!$planningType) {
+          return new JsonResponse(['error' => "Ce groupe n'a pas de trame associée"], 400);
+      }
+
+      /* Récupération ou création du Calendar */
+
+      $calendar = $group->getCalendar();
+      //tableau associatif avec année-numSemaine en clé -> vérifier rapidement si une semaine est déjà enregistrée
+      $existingWeeks = [];
+      //tableau pour stocker les semaines qu'on souhaite ajouter mais existent déjà en BD
+      $skippedWeeks = [];
+
+      if (!$calendar) {
+          $calendar = new Calendar();
+          $calendar->setName('Planning de ' . $group->getName());
+          $calendar->setCreatedAt(new \DateTimeImmutable());
+          $calendar->setUser($user);
+          $group->setCalendar($calendar);
+          $entityManager->persist($calendar);
+      } else {
+          foreach ($calendar->getWeeks() as $week) {
+              $key = $week->getYear() . '-' . $week->getNumber();
+              $existingWeeks[$key] = true;
+          }
+      }
+
+      /* Boucle sur tout les jours que l'on souhaite générer */
+      $currentDay = clone $startDate;
+      $weeks   = [];
+      $nbWeeksType = $planningType->getWeeks()->count();
+
+      while ($currentDay <= $endDate) {
+          // Il peux y avoir plusieurs semaines dans une trame
+          // On cherche à savoir combien de jours se sont écoules pour savoir comment appliquer la trame
+          $daysSinceStart = $startDate->diff($currentDay)->days;
+          $idWeekType = intdiv($daysSinceStart, 7) % $nbWeeksType;
+          $dayIndex = ((int) $currentDay->format('N')) - 1;
+          $weeksType = $planningType->getWeeks()[$idWeekType] ?? null;
+          if (!$weeksType) {
+              $currentDay->modify('+1 day');
+              continue;
+          }
+          $daysType = $weeksType->getDayTypes()[$dayIndex] ?? null;
+          if (!$daysType) {
+              $currentDay->modify('+1 day');
+              continue;
+          }
+          // On trouve le lundi de la semaine courante
+          $mondayDate = (clone $currentDay)->modify('monday this week');
+          $weekYear   = (int) $mondayDate->format('o');
+          $weekNumber = (int) $mondayDate->format('W');
+          $weekKey    = $weekYear . '-' . $weekNumber;
+
+          if (isset($existingWeeks[$weekKey])) {
+              if (!in_array($weekKey, $skippedWeeks)) {
+                $skippedWeeks[] = $weekKey;
+              }
+              $currentDay->modify('+1 day');
+              continue;
+          }
+
+          if (!isset($weeks[$weekKey])) {
+              $week = new Week();
+              $week->setYear($weekYear);
+              $week->setNumber($weekNumber);
+
+              // Générer le nom : Mois ou Mois/Mois si chevauchement
+              $weekDays = [];
+              for ($i = 0; $i < 7; $i++) {
+                  $date = (clone $mondayDate)->modify("+$i days");
+                  $weekDays[] = ucfirst($date->format('F'));
+              }
+              $uniqueMonths = array_unique($weekDays);
+              $weekName = implode('/', $uniqueMonths);
+
+              $week->setName($weekName);
+              $week->setCalendar($calendar);
+              $weeks[$weekKey] = $week;
+              $calendar->addWeek($week);
+          }
+
+          $week = $weeks[$weekKey];
+
+          $day = new Day();
+          $day->setName(clone $currentDay);
+          $day->setWeek($week);
+          $week->addDay($day);
+          // Ajout des slots au jour en fonction de la trame
+          foreach ($daysType->getSlotTypes() as $slotType) {
+              $slot = new Slot();
+              $slot->setStartTime(
+                  new \DateTime($currentDay->format('Y-m-d') . ' ' . $slotType->getStartTime()->format('H:i'))
+              );
+              $slot->setEndTime(
+                  new \DateTime($currentDay->format('Y-m-d') . ' ' . $slotType->getEndTime()->format('H:i'))
+              );
+              $slot->setColor($slotType->getColor());
+              $slot->setDay($day);
+              $day->addSlot($slot);
+          }
+          $currentDay->modify('+1 day');
+      }
+
+      $entityManager->flush();
+
+      return new JsonResponse([
+          'message'       => 'Planning généré avec succès',
+          'calendarId'    => $calendar->getId(),
+          'skippedWeeks'  => $skippedWeeks,
+      ], 201);
+  }
 
 
 }
