@@ -16,28 +16,18 @@ class CalendarRepository extends ServiceEntityRepository
         parent::__construct($registry, Calendar::class);
     }
 
-    //    /**
-    //     * @return Calendar[] Returns an array of Calendar objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('c')
-    //            ->andWhere('c.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('c.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?Calendar
-    //    {
-    //        return $this->createQueryBuilder('c')
-    //            ->andWhere('c.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        public function findWithDaysInRange(int $calendarId, \DateTime $start, \DateTime $end): ?Calendar
+    {
+        return $this->createQueryBuilder('c')
+            ->join('c.weeks', 'w')
+            ->join('w.days', 'd')
+            ->addSelect('w', 'd')
+            ->where('c.id = :id')
+            ->andWhere('d.name BETWEEN :start AND :end')
+            ->setParameter('id', $calendarId)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

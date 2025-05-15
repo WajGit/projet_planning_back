@@ -19,14 +19,22 @@ use Symfony\Component\Routing\Attribute\Route;
 final class CalendarController extends AbstractController
 {
 
-  #[Route('/{id}', name: 'api_calendar_show', methods: ['GET'])]
-  public function show(int $id, EntityManagerInterface $entityManager): JsonResponse
+  #[Route('/{id}', name: 'api_calendar_show', methods: ['GET', 'POST'])]
+  public function show(int $id, Request $request, EntityManagerInterface $entityManager): JsonResponse
   {
     $user = $this->getUser();
     if (!$user) {
       return new JsonResponse(['error' => 'Non autorisé'], 401);
     }
-    $calendar = $entityManager->getRepository(Calendar::class)->find($id);
+    $data = json_decode($request->getContent(), true);
+    if (empty($data['startDate']) || empty($data['endDate'])) {
+      return new JsonResponse(['error' => 'Dates manquantes'], 400);
+    }
+    $start = new \DateTime($data['startDate']);
+    $end = new \DateTime($data['endDate']);
+    // $calendar = $entityManager->getRepository(Calendar::class)->find($id);
+    $calendar = $entityManager->getRepository(Calendar::class)->findWithDaysInRange($id, $start, $end);
+
     if (!$calendar) {
       return new JsonResponse(['error' => 'Calendrier introuvable'], 404);
     }
@@ -97,41 +105,11 @@ public function create(Request $request, EntityManagerInterface $entityManager):
     $group->setCalendar($calendar);
     $entityManager->persist($calendar);
     $entityManager->flush();
-    $data = [
-      'id' => $calendar->getId(),
-      'name' => $calendar->getName(),
-      'weeks' => [],
-    ];
-    foreach ($calendar->getWeeks() as $week) {
-      $weekData = [
-        'id' => $week->getId(),
-        'name' => $week->getName(),
-        'year' => $week->getYear(),
-        'number' => $week->getNumber(),
-        'days' => [],
-      ];
-      foreach ($week->getDays() as $day) {
-        $dayData = [
-          'id' => $day->getId(),
-          'name' => $day->getName()->format('Y-m-d'),
-          'slots' => [],
-        ];
-        foreach ($day->getSlots() as $slot) {
-          $dayData['slots'][] = [
-            'id' => $slot->getId(),
-            'startTime' => $slot->getStartTime()->format('H:i'),
-            'endTime' => $slot->getEndTime()->format('H:i'),
-            'color' => $slot->getColor(),
-            'employee' => $slot->getEmployee()?->getId()
-          ];
-        }
-        $weekData['days'][] = $dayData;
-      }
-      $data['weeks'][] = $weekData;
-    }
-    return new JsonResponse($data);
-
-}
+    return new JsonResponse([
+      'message' => 'Calendrier enregistré avec succès',
+      'calendarId' => $calendar->getId()
+    ], Response::HTTP_CREATED);
+  }
 
   #[Route('/save', name: 'api_calendar_save', methods: ['POST'])]
   public function save(Request $request, EntityManagerInterface $entityManager): JsonResponse
