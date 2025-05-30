@@ -21,9 +21,11 @@ class Group
   #[ORM\Column(length: 255)]
   private ?string $name = null;
 
+  #[Groups(['company:read', 'employee:read'])]
   #[ORM\Column(type: Types::TIME_MUTABLE)]
   private ?\DateTimeInterface $start = null;
 
+  #[Groups(['company:read', 'employee:read'])]
   #[ORM\Column(type: Types::TIME_MUTABLE)]
   private ?\DateTimeInterface $end = null;
 

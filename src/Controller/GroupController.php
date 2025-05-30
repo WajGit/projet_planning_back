@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Serializer\SerializerInterface;
 
 #[Route('/api/group')]
 final class GroupController extends AbstractController
@@ -36,7 +37,7 @@ final class GroupController extends AbstractController
   }
 
 
-  
+
   #[Route('/add', name: 'app_group_add', methods: ['POST'])]
   public function new(Request $request, EntityManagerInterface $entityManager, CompanyRepository $companyRepository): Response
   {
@@ -69,6 +70,42 @@ final class GroupController extends AbstractController
   }
 
 
+  #[Route('/edit', name: 'api_group_edit', methods: ['PUT'])]
+  public function edit(Request $request, EntityManagerInterface $entityManager, SerializerInterface $serializer): JsonResponse
+  {
+    $data = json_decode($request->getContent(), true);
+    $user = $this->getUser();
+    if (!$user) {
+      return new JsonResponse(['error' => 'Unauthorized'], 401);
+    }
+    if (empty($data['groupId']) || empty($data['name'])) {
+      return new JsonResponse(['error' => 'ID et nom requis'], Response::HTTP_BAD_REQUEST);
+    }
+    $group = $entityManager->getRepository(Group::class)->find($data['groupId']);
+    if (!$group || $group->getCompany()->getAuthor() !== $user) {
+      return new JsonResponse(['error' => 'Groupe introuvable ou accès interdit'], 404);
+    }
+    $group->setName($data['name']);
+    $entityManager->flush();
+    $json = $serializer->serialize($group, 'json', ['groups' => 'group:read']);
+    return new JsonResponse($json, 200, [], true);
+  }
+
+  #[Route('/{id}', name: 'api_group_delete', methods: ['DELETE'])]
+  public function delete(int $id, EntityManagerInterface $entityManager): JsonResponse
+  {
+    $user = $this->getUser();
+    if (!$user) {
+      return new JsonResponse(['error' => 'Unauthorized'], 401);
+    }
+    $group = $entityManager->getRepository(Group::class)->find($id);
+    if (!$group || $group->getCompany()->getAuthor() !== $user) {
+      return new JsonResponse(['error' => 'Groupe introuvable ou accès interdit'], 404);
+    }
+    $entityManager->remove($group);
+    $entityManager->flush();
+    return new JsonResponse(['message' => 'Groupe supprimé avec succès']);
+  }
 
 
 }

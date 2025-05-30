@@ -31,8 +31,23 @@ final class CompanyController extends AbstractController
     return new JsonResponse($json, 200, [], true); // true = déjà en JSON
   }
 
+  #[Route('/{id}', name: 'api_company_show', methods: ['GET'])]
+  public function show(int $id, EntityManagerInterface $entityManager, SerializerInterface $serializer): JsonResponse
+  {
+    $user = $this->getUser();
+    if (!$user) {
+      return new JsonResponse(['error' => 'Unauthorized'], 401);
+    }
+    $company = $entityManager->getRepository(Company::class)->find($id);
+    if (!$company || $company->getAuthor() !== $user) {
+      return new JsonResponse(['error' => "Entreprise introuvable ou accès interdit"], 404);
+    }
+    $json = $serializer->serialize($company, 'json', ['groups' => 'company:read']);
+    return new JsonResponse($json, 200, [], true);
+  }
+
   #[Route('/create', name: 'api_company_create', methods: ['POST'])]
-  public function new(Request $request, EntityManagerInterface $entityManager): Response
+  public function new(Request $request, EntityManagerInterface $entityManager, SerializerInterface $serializer): Response
   {
     $data = json_decode($request->getContent(), true);
     $user = $this->getUser();
@@ -47,15 +62,12 @@ final class CompanyController extends AbstractController
     $company->setAuthor($user);
     $entityManager->persist($company);
     $entityManager->flush();
-    return new JsonResponse([
-      'message' => 'Entreprise créée avec succès',
-      'id' => $company->getId(),
-      'name' => $company->getName()
-    ], Response::HTTP_CREATED);
+    $json = $serializer->serialize($company, 'json', ['groups' => 'company:read']);
+    return new JsonResponse($json, 200, [], true);
   }
 
   #[Route('/edit', name: 'api_company_edit', methods: ['PUT'])]
-  public function edit(Request $request, EntityManagerInterface $entityManager): JsonResponse
+  public function edit(Request $request, EntityManagerInterface $entityManager, SerializerInterface $serializer): JsonResponse
   {
     $data = json_decode($request->getContent(), true);
     $user = $this->getUser();
@@ -71,11 +83,8 @@ final class CompanyController extends AbstractController
     }
     $company->setName($data['name']);
     $entityManager->flush();
-    return new JsonResponse([
-      'message' => 'Entreprise modifiée avec succès',
-      'id' => $company->getId(),
-      'name' => $company->getName()
-    ]);
+    $json = $serializer->serialize($company, 'json', ['groups' => 'company:read']);
+    return new JsonResponse($json, 200, [], true);
   }
 
   #[Route('/delete/{id}', name: 'api_company_delete', methods: ['DELETE'])]
@@ -93,6 +102,5 @@ final class CompanyController extends AbstractController
     $entityManager->flush();
     return new JsonResponse(['message' => "Entreprise supprimée avec succès"]);
   }
-
 
 }
