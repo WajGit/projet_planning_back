@@ -39,7 +39,7 @@ final class GroupController extends AbstractController
 
 
   #[Route('/add', name: 'app_group_add', methods: ['POST'])]
-  public function new(Request $request, EntityManagerInterface $entityManager, CompanyRepository $companyRepository): Response
+  public function new(Request $request, EntityManagerInterface $entityManager, CompanyRepository $companyRepository, SerializerInterface $serializer): Response
   {
     $data = json_decode($request->getContent(), true);
     $user = $this->getUser();
@@ -59,14 +59,10 @@ final class GroupController extends AbstractController
     $group->setStart(new \DateTime($data['group']['start']));
     $group->setEnd(new \DateTime($data['group']['end']));
     $group->setCompany($company);
-
     $entityManager->persist($group);
     $entityManager->flush();
-
-    return new JsonResponse([
-      'message' => 'Groupe créé avec succès',
-      'groupId' => $group->getId()
-    ], Response::HTTP_CREATED);
+    $json = $serializer->serialize($group, 'json', ['groups' => 'group:read']);
+    return new JsonResponse($json, 200, [], true);
   }
 
 

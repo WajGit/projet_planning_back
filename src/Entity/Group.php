@@ -14,18 +14,18 @@ class Group
   #[ORM\Id]
   #[ORM\GeneratedValue]
   #[ORM\Column]
-  #[Groups(['company:read', 'employee:read'])]
+  #[Groups(['group:read', 'company:read', 'employee:read'])]
   private ?int $id = null;
 
-  #[Groups(['company:read', 'employee:read'])]
+  #[Groups(['group:read', 'company:read', 'employee:read'])]
   #[ORM\Column(length: 255)]
   private ?string $name = null;
 
-  #[Groups(['company:read', 'employee:read'])]
+  #[Groups(['group:read', 'company:read', 'employee:read'])]
   #[ORM\Column(type: Types::TIME_MUTABLE)]
   private ?\DateTimeInterface $start = null;
 
-  #[Groups(['company:read', 'employee:read'])]
+  #[Groups(['group:read', 'company:read', 'employee:read'])]
   #[ORM\Column(type: Types::TIME_MUTABLE)]
   private ?\DateTimeInterface $end = null;
 
