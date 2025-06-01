@@ -46,11 +46,11 @@ final class GroupController extends AbstractController
     if (!$user) {
       return new JsonResponse(['error' => 'Unauthorized'], 401);
     }
-    if (empty($data['group']['name'])) {
-      return new JsonResponse(['error' => 'Le nom est requis'], Response::HTTP_BAD_REQUEST);
+    if (empty($data['companyId']) || empty($data['group'])) {
+      return new JsonResponse(['error' => 'id et nom est requis'], Response::HTTP_BAD_REQUEST);
     }
-    $companyName = $data['company']['name'];
-    $company = $companyRepository->findOneBy(['name' => $companyName]);
+
+    $company = $companyRepository->find($data['companyId']);
     if (!$company) {
       return new JsonResponse(['error' => 'Entreprise non trouvée'], Response::HTTP_NOT_FOUND);
     }

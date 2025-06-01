@@ -33,7 +33,6 @@ class Group
   private ?\DateTimeImmutable $createdAt = null;
 
   #[ORM\ManyToOne(inversedBy: 'groups')]
-  #[Groups(['group:read'])]
   private ?Company $company = null;
 
   #[Groups(['company:read'])]
@@ -41,7 +40,7 @@ class Group
   #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
   private ?PlanningType $planningType = null;
 
-  #[Groups(['group:read'])]
+  #[Groups(['group:read', 'company:read'])]
   #[ORM\OneToOne(cascade: ['persist', 'remove'])]
   #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
   private ?Calendar $calendar = null;

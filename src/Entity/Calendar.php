@@ -11,7 +11,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
 #[ORM\Entity(repositoryClass: CalendarRepository::class)]
 class Calendar
 {
-    #[Groups(['group:read'])]
+    #[Groups(['company:read', 'group:read'])]
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -34,7 +34,7 @@ class Calendar
     /**
      * @var Collection<int, Week>
      */
-    #[Groups(['group:read'])]
+    #[Groups(['company:read', 'group:read'])]
     #[ORM\OneToMany(targetEntity: Week::class, mappedBy: 'calendar', cascade: ['persist', 'remove'])]
     private Collection $weeks;
 

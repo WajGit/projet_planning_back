@@ -19,9 +19,11 @@ class Week
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
+    #[Groups(['company:read'])]
     #[ORM\Column]
     private ?int $year = null;
 
+    #[Groups(['company:read'])]
     #[ORM\Column]
     private ?int $number = null;
 
