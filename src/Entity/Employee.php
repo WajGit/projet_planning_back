@@ -51,10 +51,17 @@ class Employee
     #[ORM\OneToMany(targetEntity: Slot::class, mappedBy: 'employee')]
     private Collection $slots;
 
+    /**
+     * @var Collection<int, Group>
+     */
+    #[ORM\ManyToMany(targetEntity: Group::class, mappedBy: 'employees')]
+    private Collection $groups;
+
     public function __construct()
     {
         $this->companys = new ArrayCollection();
         $this->slots = new ArrayCollection();
+        $this->groups = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -183,6 +190,33 @@ class Employee
             if ($slot->getEmployee() === $this) {
                 $slot->setEmployee(null);
             }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Group>
+     */
+    public function getGroups(): Collection
+    {
+        return $this->groups;
+    }
+
+    public function addGroup(Group $group): static
+    {
+        if (!$this->groups->contains($group)) {
+            $this->groups->add($group);
+            $group->addEmployee($this);
+        }
+
+        return $this;
+    }
+
+    public function removeGroup(Group $group): static
+    {
+        if ($this->groups->removeElement($group)) {
+            $group->removeEmployee($this);
         }
 
         return $this;

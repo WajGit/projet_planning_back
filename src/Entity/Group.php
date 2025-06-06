@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\GroupRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -45,10 +47,18 @@ class Group
   #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
   private ?Calendar $calendar = null;
 
+  /**
+   * @var Collection<int, Employee>
+   */
+  #[Groups(['company:read'])]
+  #[ORM\ManyToMany(targetEntity: Employee::class, inversedBy: 'groups')]
+  private Collection $employees;
+
 
   public function __construct()
   {
     $this->createdAt = new \DateTimeImmutable();
+    $this->employees = new ArrayCollection();
 
   }
 
@@ -137,6 +147,30 @@ class Group
   public function setCalendar(?Calendar $calendar): static
   {
       $this->calendar = $calendar;
+
+      return $this;
+  }
+
+  /**
+   * @return Collection<int, Employee>
+   */
+  public function getEmployees(): Collection
+  {
+      return $this->employees;
+  }
+
+  public function addEmployee(Employee $employee): static
+  {
+      if (!$this->employees->contains($employee)) {
+          $this->employees->add($employee);
+      }
+
+      return $this;
+  }
+
+  public function removeEmployee(Employee $employee): static
+  {
+      $this->employees->removeElement($employee);
 
       return $this;
   }
