@@ -13,10 +13,11 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
+#[Route('/api')]
 class RegistrationController extends AbstractController
 {
 
-    #[Route('/api/register', name: 'register', methods: ['POST'])]
+    #[Route('/register', name: 'register', methods: ['POST'])]
 
     public function register(Request $request, UserPasswordHasherInterface $userPasswordHasher, EntityManagerInterface $entityManager, UserRepository $userRepository): Response
     {
